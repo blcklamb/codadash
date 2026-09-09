@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: keybit-game
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    maxShutdownDelaySeconds: 180
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: WEB_ORIGIN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false

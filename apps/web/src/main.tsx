@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import {
   Terminal,
-  ArrowUpRight,
   Timer,
   CalendarDays,
   Swords,
@@ -26,7 +25,8 @@ import {
   LogOut,
   RefreshCw,
   AlertCircle,
-} from 'lucide-react';
+} from './pixel-icons';
+import '@fontsource/press-start-2p/latin-400.css';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
 import '@fontsource/noto-sans-kr/400.css';
@@ -55,7 +55,10 @@ import {
   streaks,
   VERSION,
   type Language,
-  type Difficulty,
+  type PracticeDifficulty,
+  type BattleDifficulty,
+  practiceDifficulty,
+  battleDifficulty,
 } from '../../../packages/shared/src/content';
 import type { Result } from '../../../packages/shared/src/engine';
 import {
@@ -68,6 +71,7 @@ import {
   type RoomView,
 } from './game';
 import './style.css';
+import { updateSeo } from './seo';
 const queryClient = new QueryClient();
 type Screen = 'speed' | 'daily' | 'battle' | 'records' | 'settings';
 const screens: Screen[] = ['speed', 'daily', 'battle', 'records', 'settings'];
@@ -84,8 +88,18 @@ function App() {
     location = useLocation();
   const path = location.pathname.split('/')[1],
     mode: Screen = screens.includes(path as Screen) ? (path as Screen) : 'speed';
+  useEffect(() => {
+    updateSeo(location.pathname, i18next.language);
+  }, [location.pathname, i18next.language]);
   const [language, setLanguageState] = useState<Language>(read('keybit.language', 'javascript')),
-    [difficulty, setDifficulty] = useState<Difficulty>(read('keybit.difficulty', 'beginner')),
+    [difficulty, setDifficulty] = useState<PracticeDifficulty>(() =>
+      practiceDifficulty(
+        read('keybit.practiceDifficulty', read('keybit.difficulty', 'intermediate')),
+      ),
+    ),
+    [battleLevel, setBattleLevel] = useState<BattleDifficulty>(() =>
+      battleDifficulty(read('keybit.battleDifficulty', read('keybit.difficulty', 'beginner'))),
+    ),
     [duration, setDuration] = useState<30 | 60 | 120>(read('keybit.duration', 60));
   const [active, setActive] = useState<Active | null>(rememberedActive),
     [result, setResult] = useState<(Result & { saved: boolean }) | null>(null),
@@ -238,7 +252,9 @@ function App() {
     try {
       const r = await api<RoomView & { participantToken: string }>(
         join ? '/v1/rooms/join' : '/v1/rooms',
-        join ? { code: joinCode.trim().toUpperCase(), name } : { language, difficulty, name },
+        join
+          ? { code: joinCode.trim().toUpperCase(), name }
+          : { language, difficulty: battleLevel, name },
       );
       setResult(null);
       setActive({ id: r.id, kind: 'room', participantToken: r.participantToken });
@@ -303,57 +319,74 @@ function App() {
   const showResult = !!result,
     playing = active && !showResult && (game.practice || game.battle),
     lobby = active?.kind === 'room' && !game.battle;
+  const pageTitle = result
+    ? result.mode === 'battle'
+      ? t(result.outcome === 'win' ? 'wins' : result.outcome || 'draw')
+      : t('finishHeading')
+    : lobby
+      ? t('room')
+      : t(mode);
+  const pageDescription = result
+    ? result.reason
+      ? t('reason_' + result.reason)
+      : `${LANGUAGE_NAMES[result.language]} · ${t(result.difficulty)} · ${result.duration}s`
+    : playing
+      ? undefined
+      : lobby
+        ? t('roomReady')
+        : mode === 'records'
+          ? t('recordNote')
+          : mode === 'settings'
+            ? undefined
+            : t(mode + 'Desc');
+
   return (
     <div className="app">
       <aside className="sidebar">
         <Link
           to="/"
           className="brand"
+          aria-label="codadash (코다대시) 홈"
           onClick={(e) => {
             e.preventDefault();
             go('speed');
           }}
         >
-          <span className="brand-icon">
-            k<span>▪</span>
-          </span>
-          keybit<span className="beta">BETA</span>
+          <img className="brand-icon" src="/favicon.svg" alt="" width="32" height="32" />
+          codadash
         </Link>
-        <div className="side-label">PLAYGROUND</div>
         <nav>
           {navItems.map(([Icon, key]) => (
-            <button
+            <Link
+              to={key === 'speed' ? '/' : '/' + key}
               className={mode === key ? 'nav-item selected' : 'nav-item'}
               key={key}
-              onClick={() => go(key)}
+              onClick={(event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                go(key);
+              }}
             >
               <Icon size={18} />
               {t(key)}
               {mode === key && <span className="nav-dot" />}
-            </button>
+            </Link>
           ))}
         </nav>
-        <div className="side-bottom">
-          <div className="pixel-grid">
-            {Array.from({ length: 25 }, (_, i) => (
-              <i key={i} />
-            ))}
-          </div>
-          <span>
-            LESS AUTOCOMPLETE.
-            <br />
-            MORE FINGERWORK.
-          </span>
-          <small>v0.1.0 / made for developers</small>
-        </div>
       </aside>
       <div className="workspace">
         <header className="topbar">
-          <span className="breadcrumb">
-            playground <ChevronRight size={14} />
-            <b>{t(mode)}</b>
-          </span>
+          <div className="page-title">
+            <h1>{pageTitle}</h1>
+            {pageDescription && <p>{pageDescription}</p>}
+          </div>
           <div className="header-actions">
+            {lobby && !showResult && !playing && (
+              <button className="text-button" onClick={leave}>
+                <ArrowLeft size={16} />
+                {t('leave')}
+              </button>
+            )}
             <button
               className="locale-switch"
               aria-label="Change language"
@@ -418,17 +451,6 @@ function App() {
             )
           ) : lobby ? (
             <>
-              <div className="page-heading">
-                <div>
-                  <div className="eyebrow">PRIVATE MATCH / 1 VS 1</div>
-                  <h1>{t('room')}</h1>
-                  <p>{t('roomReady')}</p>
-                </div>
-                <button className="text-button" onClick={leave}>
-                  <ArrowLeft size={16} />
-                  {t('leave')}
-                </button>
-              </div>
               {game.room ? (
                 <section className="lobby-panel">
                   <div className="room-code">
@@ -521,7 +543,6 @@ function App() {
             </>
           ) : mode === 'settings' ? (
             <>
-              <PageHeading title={t('settings')} subtitle="MAKE IT YOURS" />
               <section className="settings-panel">
                 <div className="setting-row">
                   <div>
@@ -583,11 +604,6 @@ function App() {
             </>
           ) : mode === 'records' ? (
             <>
-              <PageHeading
-                title={t('records')}
-                subtitle="SMALL RUNS. REAL PROGRESS."
-                description={t('recordNote')}
-              />
               {userId && (
                 <div className="segmented">
                   <button
@@ -678,67 +694,6 @@ function App() {
             </>
           ) : (
             <>
-              <div className="page-heading">
-                <div>
-                  <div className="eyebrow">
-                    {mode === 'speed'
-                      ? t('online')
-                      : mode === 'daily'
-                        ? 'ONE DAY. ONE COMMIT.'
-                        : 'PRIVATE MATCH / 1 VS 1'}
-                  </div>
-                  <h1>
-                    {t(
-                      mode === 'speed'
-                        ? 'homeHeading'
-                        : mode === 'daily'
-                          ? 'dailyTitle'
-                          : 'battleTitle',
-                    )}
-                  </h1>
-                  <p>
-                    {t(
-                      mode === 'speed' ? 'homeSub' : mode === 'daily' ? 'dailyNote' : 'battleNote',
-                    )}
-                  </p>
-                </div>
-                {mode === 'speed' && (
-                  <div className="keyboard-badge">
-                    <Keyboard size={30} />
-                    <span>
-                      LET’S
-                      <br />
-                      TYPE.
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="mode-grid">
-                {[
-                  [Timer, 'speed', '01'],
-                  [CalendarDays, 'daily', '02'],
-                  [Swords, 'battle', '03'],
-                ].map(([Icon, key, n]) => {
-                  const K = Icon as typeof Timer;
-                  return (
-                    <button
-                      key={key as string}
-                      onClick={() => go(key as Screen)}
-                      className={'mode-card ' + (mode === key ? 'active' : '')}
-                    >
-                      <div>
-                        <K size={21} />
-                        <span>{n as string}</span>
-                      </div>
-                      <h3>
-                        {t(key as string)}
-                        <ArrowUpRight size={18} />
-                      </h3>
-                      <p>{t(key + 'Desc')}</p>
-                    </button>
-                  );
-                })}
-              </div>
               {mode === 'daily' && (
                 <div className="daily-summary">
                   <div>
@@ -759,7 +714,6 @@ function App() {
                     <span className="tiny-dot" />
                     {t('language')}
                   </span>
-                  <small>11 LANGUAGES / ONE KEYBOARD</small>
                 </div>
                 <div className="languages">
                   {LANGUAGES.map((l) => (
@@ -791,8 +745,11 @@ function App() {
                     <label>
                       {t('difficulty')}
                       <select
-                        value={difficulty}
-                        onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+                        value={battleLevel}
+                        onChange={(e) => {
+                          setBattleLevel(battleDifficulty(e.target.value));
+                          write('keybit.battleDifficulty', e.target.value);
+                        }}
                       >
                         <option value="beginner">{t('beginner')}</option>
                         <option value="standard">{t('standard')}</option>
@@ -824,7 +781,6 @@ function App() {
                       }
                       maxLength={6}
                     />
-                    <p className="small-note">{t('battleDesc')}</p>
                     <button
                       className="secondary full-width desktop-play"
                       disabled={busy || joinCode.length !== 6}
@@ -843,27 +799,22 @@ function App() {
                         <Terminal size={16} />
                         {mode === 'daily' ? 'daily' : 'warmup'}.{EXTENSIONS[language]}
                       </span>
-                      <span className="editor-tag">AUTO-INDENT ON</span>
                     </div>
                     <div className="code-preview">
                       <Code
                         snippet={
                           deck(
                             language,
-                            mode === 'daily' ? 'beginner' : difficulty,
+                            mode === 'daily' ? 'intermediate' : difficulty,
                             'block',
                             'preview',
                           )[0]
                         }
                       />
-                      <div className="preview-caption">
-                        <Command size={15} />
-                        {t('preview')}
-                      </div>
+                      <div className="preview-caption">{t('preview')}</div>
                     </div>
                     <div className="editor-footer">
                       <span>{t('correctHint')}</span>
-                      <span>UTF-8</span>
                     </div>
                   </section>
                   <div className="start-row">
@@ -886,12 +837,12 @@ function App() {
                         aria-label={t('difficulty')}
                         value={difficulty}
                         onChange={(e) => {
-                          setDifficulty(e.target.value as Difficulty);
-                          write('keybit.difficulty', e.target.value);
+                          setDifficulty(e.target.value as PracticeDifficulty);
+                          write('keybit.practiceDifficulty', e.target.value);
                         }}
                       >
-                        <option value="beginner">{t('beginner')}</option>
-                        <option value="standard">{t('standard')}</option>
+                        <option value="intermediate">{t('intermediate')}</option>
+                        <option value="advanced">{t('advanced')}</option>
                       </select>
                     )}
                     <button
@@ -947,12 +898,6 @@ function App() {
               )}
             </>
           )}
-          <footer className="page-footer">
-            <span>
-              <span className="tiny-dot" /> YOUR NEXT PERSONAL BEST STARTS HERE.
-            </span>
-            <span>keybit / 2026</span>
-          </footer>
         </main>
       </div>
       <dialog ref={dialog} onCancel={() => setExitTarget(null)}>
@@ -976,25 +921,7 @@ function App() {
     </div>
   );
 }
-function PageHeading({
-  title,
-  subtitle,
-  description,
-}: {
-  title: string;
-  subtitle: string;
-  description?: string;
-}) {
-  return (
-    <div className="page-heading">
-      <div>
-        <div className="eyebrow">{subtitle}</div>
-        <h1>{title}</h1>
-        {description && <p>{description}</p>}
-      </div>
-    </div>
-  );
-}
+
 function ResetClock() {
   const { t } = useTranslation();
   const [now, setNow] = useState(Date.now());
@@ -1136,28 +1063,14 @@ function ResultScreen({
       .slice(0, 3);
   return (
     <div className="results">
-      <div className="result-heading">
-        <div className={'result-icon ' + (r.outcome === 'loss' ? 'lost' : '')}>
-          <Trophy size={32} />
-        </div>
-        <div className="eyebrow">{r.mode === 'battle' ? 'MATCH COMPLETE' : 'SESSION COMPLETE'}</div>
-        <h1>
-          {r.mode === 'battle'
-            ? t(r.outcome === 'win' ? 'wins' : r.outcome || 'draw')
-            : t(newBest ? 'resultHeading' : 'finishHeading')}
-        </h1>
-        <p>
-          {r.reason
-            ? t('reason_' + r.reason)
-            : `${LANGUAGE_NAMES[r.language]} · ${t(r.difficulty)} · ${r.duration}s`}
-        </p>
-        {newBest && (
+      {newBest && (
+        <div className="result-heading">
           <span className="new-best">
             <Trophy size={14} />
             {t('newBest')}
           </span>
-        )}
-      </div>
+        </div>
+      )}
       <StatsRow
         values={[
           {

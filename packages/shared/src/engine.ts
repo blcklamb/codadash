@@ -1,4 +1,14 @@
-import { deck, dayKey, VERSION, type Language, type Difficulty, type Snippet } from './content';
+import {
+  deck,
+  dayKey,
+  VERSION,
+  type Language,
+  type Difficulty,
+  type PracticeDifficulty,
+  type BattleDifficulty,
+  practiceDifficulty,
+  type Snippet,
+} from './content';
 export type Mode = 'speed' | 'daily' | 'battle';
 export type Status = 'countdown' | 'playing' | 'finished' | 'aborted';
 export type Action = {
@@ -68,7 +78,7 @@ export type Practice = {
   id: string;
   ownerId: string;
   language: Language;
-  difficulty: Difficulty;
+  difficulty: PracticeDifficulty;
   duration: number;
   mode: 'speed' | 'daily';
   status: Status;
@@ -86,7 +96,7 @@ export type Practice = {
 export type Battle = {
   id: string;
   language: Language;
-  difficulty: Difficulty;
+  difficulty: BattleDifficulty;
   status: Status;
   startAt: number;
   endAt: number;
@@ -168,8 +178,9 @@ export function createPractice(
   mode: 'speed' | 'daily',
   now: number,
 ): Practice {
+  difficulty = practiceDifficulty(difficulty);
   if (mode === 'daily') {
-    difficulty = 'beginner';
+    difficulty = 'intermediate';
     duration = 60;
   }
   const date = dayKey(now),
@@ -237,7 +248,7 @@ export function inputPractice(p: Practice, a: Action, now: number) {
 export function createBattle(
   id: string,
   language: Language,
-  difficulty: Difficulty,
+  difficulty: BattleDifficulty,
   players: { id: string; name: string }[],
   now: number,
 ): Battle {

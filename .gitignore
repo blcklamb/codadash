@@ -8,3 +8,5 @@ output/
 test-results/
 playwright-report/
 .DS_Store
+
+.playwright-cli/

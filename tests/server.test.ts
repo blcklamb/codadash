@@ -191,3 +191,44 @@ describe('real server ownership and idempotence', () => {
     await emit(s, 'command', { requestId: crypto.randomUUID(), op: 'leave' });
   });
 });
+
+it('normalizes legacy API levels and serves an intermediate daily deck', async () => {
+  for (const [difficulty, expected] of [
+    ['beginner', 'intermediate'],
+    ['standard', 'advanced'],
+    ['intermediate', 'intermediate'],
+    ['advanced', 'advanced'],
+  ] as const) {
+    const g = await guest();
+    const created = await api('/v1/practice-sessions', g.token, {
+      language: 'javascript',
+      mode: 'speed',
+      difficulty,
+    });
+    expect(created.status).toBe(200);
+    const socket = await connect(g);
+    const state = event(socket, 'practice', (p) => p.status === 'playing');
+    await emit(socket, 'attach', { kind: 'practice', id: created.data.id });
+    const practice = await state;
+    expect(practice.difficulty).toBe(expected);
+    expect(practice.card.difficulty).toBe(expected);
+    await emit(socket, 'command', { op: 'leave', requestId: crypto.randomUUID() });
+  }
+  const daily = (await api('/v1/daily-challenges?language=python')).data;
+  expect(daily).toMatchObject({
+    difficulty: 'intermediate',
+    duration: 60,
+    count: 10,
+    version: '2.0.0',
+  });
+  const g = await guest();
+  expect(
+    (
+      await api('/v1/rooms', g.token, {
+        language: 'javascript',
+        name: 'Ada',
+        difficulty: 'advanced',
+      })
+    ).status,
+  ).toBe(400);
+});

@@ -57,7 +57,9 @@ test('device storage failure allows guest play and never reports a saved record'
   await page.getByRole('button', { name: '30 초', exact: true }).click();
   await page.getByRole('button', { name: '연습 시작', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Code input' })).toBeEnabled();
-  await expect(page.getByText('SESSION COMPLETE')).toBeVisible({ timeout: 40000 });
+  await expect(page.getByRole('heading', { name: '연습 완료', level: 1 })).toBeVisible({
+    timeout: 40000,
+  });
   await expect(page.locator('.save-status')).toContainText(
     '이 브라우저에 기록을 저장하지 못했습니다.',
   );

@@ -1,4 +1,4 @@
-# keybit 운영·배포 안내
+# codadash (코다대시) 운영·배포 안내
 
 ## 로컬 실행과 환경 변수
 
@@ -87,3 +87,17 @@ SIGTERM 시 새 경기를 받지 않고 기존 경기와 결과 저장을 최대
 ## 제품 지표 확인
 
 출시 후 수집할 지표는 연습 완료율·재도전율·일일 완료·초대 전환·재대결·재방문이다. 현재 코드의 세션 시작/종료 테이블과 결과 로그로 완료 수와 승패를 확인할 수 있다. 방문 세션 기반 재방문/전환 이벤트의 별도 분석 수집은 아직 외부 분석 서비스에 연결하지 않았다. 실측되지 않은 수치를 제품 화면에 표시하지 않는다.
+
+## codadash 검색 설정
+
+- 프런트 빌드 환경의 `VITE_SITE_URL`에 최종 공개 origin을 입력한다(경로·쿼리 없이 `https://실제도메인`). 빌드 시 canonical, Open Graph URL, 사이트 이름 구조화 데이터와 `sitemap.xml`에 사용한다. 기본 공개 주소는 사용자가 지정한 `https://codadash.vercel.app`이며, 도메인이 바뀌면 이 값을 덮어쓴다.
+- 빌드는 홈·일일 연습·대전·기록·설정의 초기 HTML을 각각 생성한다. 검색봇과 공유 서비스는 JavaScript 실행 없이 제목·설명·기본 소개를 읽을 수 있다. `_redirects`의 페이지별 규칙을 전체 SPA 규칙보다 먼저 유지한다.
+- 사이트맵에는 공개 연습 페이지 세 개만 포함한다. 기록·설정은 `noindex, follow`이며 초대 코드 등 쿼리는 대표 주소에서 제외한다.
+- 배포 후 Google Search Console 및 네이버 서치어드바이저에서 도메인 소유권을 확인하고 `/sitemap.xml`을 제출한다. 실제 공개 URL의 초기 HTML·대표 주소·색인 상태를 확인한다. 검색 노출이나 순위가 보장되는 설정은 아니다.
+- 브랜드는 codadash(코다대시)로 변경했다. 기존 브라우저 기록·설정의 `keybit.*` 저장 키, DB 마이그레이션 파일명, 이미 연결된 배포 리소스 식별자는 호환성을 위해 유지한다. 기존 OAuth 앱의 사용자 표시 이름은 관리 화면에서 codadash로 변경할 수 있다.
+
+참고: https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics
+
+### Vercel 프런트
+
+`vercel.json`에 Vite 빌드·`dist` 출력과 페이지별 HTML 연결을 설정했다. 공개 대표 주소는 `https://codadash.vercel.app/`이다. 프로젝트의 프런트 환경 변수(VITE_API_URL 및 Supabase 공개 설정)를 유지한다. 서버 프로세스는 별도 실행 환경에서 운영한다. 배포 후 `https://codadash.vercel.app/sitemap.xml`을 검색 관리 도구에 제출한다. 이 변경은 배포 자체를 실행하지 않는다.

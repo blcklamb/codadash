@@ -1,4 +1,4 @@
-# keybit
+# codadash (코다대시)
 
 Code typing practice and real-time 1v1 code-rain battles. React + TypeScript + Vite, Express + Socket.IO, optional Supabase GitHub authentication and PostgreSQL record storage.
 

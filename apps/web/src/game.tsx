@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { useTypingInput } from './typing-input';
 import { useTranslation } from 'react-i18next';
 import { socket, identity, saveLocal, read, settingsDefault, type Settings } from './lib';
 import {
@@ -14,7 +14,7 @@ import {
   type Player,
 } from '../../../packages/shared/src/engine';
 import { EXTENSIONS, type Snippet } from '../../../packages/shared/src/content';
-import { Terminal, Heart, WifiOff, ArrowLeft, Volume2, VolumeX } from 'lucide-react';
+import { Terminal, Heart, WifiOff, ArrowLeft, Volume2, VolumeX } from './pixel-icons';
 export type PracticeView = Omit<Practice, 'cards'> & { card: Snippet | null; serverNow: number };
 export type BattleView = Omit<Battle, 'cards'> & { serverNow: number };
 export type RoomView = {
@@ -288,15 +288,78 @@ export function useGame(
   return { practice, battle, room, connected, playerId, now, send, command };
 }
 export type Game = ReturnType<typeof useGame>;
+const visibleChar = (char: string) => (char === ' ' ? '·' : char === '\n' ? '↵' : char);
+export function TypedChar({
+  expected,
+  actual,
+  caret,
+  syntax = '',
+}: {
+  expected: string;
+  actual?: string;
+  caret?: boolean;
+  syntax?: string;
+}) {
+  const error = actual !== undefined && actual !== expected;
+  return (
+    <span
+      className={
+        actual !== undefined
+          ? error
+            ? 'typed-error'
+            : 'typed-correct'
+          : caret
+            ? 'caret-char'
+            : syntax
+      }
+      data-expected={expected}
+      data-actual={actual}
+    >
+      {error
+        ? visibleChar(actual!)
+        : expected === '\n'
+          ? '↵'
+          : expected === ' ' && caret
+            ? '·'
+            : expected}
+    </span>
+  );
+}
+export function Overflow({ buffer, length }: { buffer: string; length: number }) {
+  return (
+    <>
+      {Array.from(buffer.slice(length)).map((char, i) => (
+        <span className="typed-error overflow-char" key={i} data-actual={char}>
+          {visibleChar(char)}
+        </span>
+      ))}
+      {buffer.length >= length && <span className="caret-char overflow-caret">&nbsp;</span>}
+    </>
+  );
+}
 export function Code({ snippet, typing }: { snippet: Snippet; typing?: Typing }) {
   let position = 0;
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!typing) return;
+    const viewport = root.current?.closest('.typing-surface');
+    const caret = root.current?.querySelector('.caret-char');
+    if (!viewport || !caret) return;
+    const bounds = viewport.getBoundingClientRect(),
+      cursor = caret.getBoundingClientRect();
+    if (cursor.bottom > bounds.bottom - 24)
+      viewport.scrollTop += cursor.bottom - bounds.bottom + 48;
+    if (cursor.top < bounds.top + 24) viewport.scrollTop -= bounds.top + 24 - cursor.top;
+    if (cursor.right > bounds.right - 24) viewport.scrollLeft += cursor.right - bounds.right + 48;
+    if (cursor.left < bounds.left + 48) viewport.scrollLeft -= bounds.left + 48 - cursor.left;
+  }, [typing?.buffer, snippet.id]);
   return (
-    <div className="code-lines">
+    <div className="code-lines" ref={root}>
       {snippet.source.split('\n').map((line, i, lines) => {
         const indent = line.match(/^ */)![0].length;
         const colors: Record<number, string> = {};
         for (const match of line.matchAll(
-          /("[^"]*"|'[^']*')|\b(const|let|var|int|boolean|bool|char|String|string|if|else|for|return|fn|func|def|true|false|True|False|auto|await|new|struct)\b|\b\d+\b/g,
+          /("[^"]*"|'[^']*')|\b(const|let|var|int|boolean|bool|char|String|string|if|else|for|return|fn|func|def|true|false|True|False|auto|await|new|struct|while|async|try|catch|throw|match|pub|mut|import|class|static|public)\b|\b\d+\b/g,
         )) {
           const kind = match[1] ? 'syntax-string' : match[2] ? 'syntax-keyword' : 'syntax-number';
           for (let k = match.index!; k < match.index! + match[0].length; k++) colors[k] = kind;
@@ -314,35 +377,29 @@ export function Code({ snippet, typing }: { snippet: Snippet; typing?: Typing })
                   );
                 const index = position++;
                 return (
-                  <span
+                  <TypedChar
                     key={j}
-                    className={
-                      !typing
-                        ? colors[j] || ''
-                        : index < typing.buffer.length
-                          ? typing.buffer[index] === ch
-                            ? 'typed-correct'
-                            : 'typed-error'
-                          : index === typing.buffer.length
-                            ? 'caret-char'
-                            : ''
-                    }
-                  >
-                    {ch === ' ' && typing && index === typing.buffer.length ? '·' : ch}
-                  </span>
+                    expected={ch}
+                    actual={typing?.buffer[index]}
+                    caret={typing?.buffer.length === index}
+                    syntax={typing ? '' : colors[j]}
+                  />
                 );
               })}
               {i < lines.length - 1 &&
                 (() => {
                   const index = position++;
                   return (
-                    <span
-                      className={'newline ' + (typing?.buffer.length === index ? 'caret-char' : '')}
-                    >
-                      ↵
-                    </span>
+                    <TypedChar
+                      expected={'\n'}
+                      actual={typing?.buffer[index]}
+                      caret={typing?.buffer.length === index}
+                    />
                   );
                 })()}
+              {i === lines.length - 1 && typing && (
+                <Overflow buffer={typing.buffer} length={snippet.target.length} />
+              )}
             </code>
           </div>
         );
@@ -372,12 +429,13 @@ export function StatsRow({
 export function PracticeGame({ game, onLeave }: { game: Game; onLeave: () => void }) {
   const { t } = useTranslation();
   const p = game.practice;
-  const input = useRef<HTMLTextAreaElement>(null);
-  const [focused, setFocused] = useState(true),
-    [ime, setIme] = useState(false);
-  useEffect(() => {
-    if (p?.status === 'playing') input.current?.focus();
-  }, [p?.status]);
+  const capture = useTypingInput({
+    session: p?.id,
+    enabled: p?.status === 'playing' && game.connected,
+    multiline: true,
+    send: game.send,
+  });
+  const { input, ime, focused } = capture;
   if (!p) return <div className="empty">{t('loading')}…</div>;
   if (p.status === 'aborted')
     return (
@@ -391,22 +449,6 @@ export function PracticeGame({ game, onLeave }: { game: Game; onLeave: () => voi
   const elapsed = Math.max(0, Math.min(p.duration, (game.now - p.startAt) / 1000));
   const s = stats(p.typing, p.card?.target || '', elapsed);
   const countdown = Math.max(1, Math.ceil((p.startAt - game.now) / 1000));
-  function key(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.nativeEvent.isComposing || ime || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === 'Backspace') {
-      e.preventDefault();
-      game.send('backspace');
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      game.send('insert', '\n');
-    } else if (e.key.length === 1 && /[\x20-\x7e]/.test(e.key)) {
-      e.preventDefault();
-      game.send('insert', e.key);
-    } else if (
-      ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Delete', 'Home', 'End'].includes(e.key)
-    )
-      e.preventDefault();
-  }
   return (
     <>
       <div className="play-top">
@@ -449,30 +491,11 @@ export function PracticeGame({ game, onLeave }: { game: Game; onLeave: () => voi
                 ))}
               </span>
             )}
-            <span className="editor-tag">AUTO-INDENT ON</span>
           </div>
         </div>
         <div className="typing-surface" onClick={() => input.current?.focus()}>
           {p.card && <Code snippet={p.card} typing={p.typing} />}
-          <textarea
-            ref={input}
-            aria-label="Code input"
-            className="capture-input"
-            value=""
-            autoCapitalize="off"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            onChange={() => {}}
-            onKeyDown={key}
-            onPaste={(e) => e.preventDefault()}
-            onDrop={(e) => e.preventDefault()}
-            onCompositionStart={() => setIme(true)}
-            onCompositionEnd={() => setIme(false)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            disabled={p.status !== 'playing' || !game.connected}
-          />
+          <textarea {...capture.props} aria-label="Code input" className="capture-input" />
           {p.status === 'countdown' && (
             <div className="countdown">
               <strong>{countdown}</strong>
@@ -483,7 +506,6 @@ export function PracticeGame({ game, onLeave }: { game: Game; onLeave: () => voi
         </div>
         <div className="editor-footer">
           <span>{ime ? t('ime') : t('correctHint')}</span>
-          <span>UTF-8</span>
         </div>
       </section>
       <p className="small-note">{t('noPause')}</p>
@@ -569,20 +591,18 @@ function Board({
                   <span>↘</span> {t('attack')}
                 </>
               ) : (
-                Array.from(d.snippet.target).map((ch, i) => (
-                  <span
-                    key={i}
-                    className={
-                      own && d.id === player.targetId && i < player.typing.buffer.length
-                        ? ch === player.typing.buffer[i]
-                          ? 'typed-correct'
-                          : 'typed-error'
-                        : ''
-                    }
-                  >
-                    {ch}
-                  </span>
-                ))
+                <>
+                  {Array.from(d.snippet.target).map((ch, i) => (
+                    <TypedChar
+                      key={i}
+                      expected={ch}
+                      actual={own && d.id === player.targetId ? player.typing.buffer[i] : undefined}
+                    />
+                  ))}
+                  {own && d.id === player.targetId && (
+                    <Overflow buffer={player.typing.buffer} length={d.snippet.target.length} />
+                  )}
+                </>
               )}
             </button>
           );
@@ -603,41 +623,30 @@ function Board({
 }
 export function BattleGame({ game, onLeave }: { game: Game; onLeave: () => void }) {
   const { t } = useTranslation();
-  const input = useRef<HTMLTextAreaElement>(null),
-    [ime, setIme] = useState(false),
-    [focused, setFocused] = useState(true);
   const b = game.battle;
-  useEffect(() => {
-    if (b?.status === 'playing') input.current?.focus();
-  }, [b?.status]);
+  const capture = useTypingInput({
+    session: b?.id,
+    enabled: b?.status === 'playing' && game.connected,
+    multiline: false,
+    send: game.send,
+    select: (direction) => {
+      const mine = b?.players.find((p) => p.id === game.playerId);
+      if (!mine || mine.typing.buffer) return;
+      const drops = mine.drops
+        .filter((d) => d.spawnAt <= game.now)
+        .sort((a, b) => a.expiresAt - b.expiresAt);
+      const index = drops.findIndex((d) => d.id === mine.targetId);
+      const next = (index + direction + drops.length) % drops.length;
+      if (drops[next]) game.send('select', undefined, drops[next].id);
+    },
+  });
+  const { input, ime, focused } = capture;
   if (!b) return <div className="empty">{t('loading')}…</div>;
   const mine = b.players.find((p) => p.id === game.playerId),
     enemy = b.players.find((p) => p.id !== game.playerId);
   if (!mine || !enemy) return null;
   const target = mine.drops.find((d) => d.id === mine.targetId),
     countdown = Math.ceil((b.startAt - game.now) / 1000);
-  function key(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.nativeEvent.isComposing || ime || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === 'Backspace') {
-      e.preventDefault();
-      game.send('backspace');
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      game.send('clear');
-    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (mine?.typing.buffer) return;
-      const drops = mine!.drops
-        .filter((d) => d.spawnAt <= game.now)
-        .sort((a, b) => a.expiresAt - b.expiresAt);
-      const index = drops.findIndex((d) => d.id === mine!.targetId),
-        next = (index + (e.key === 'ArrowUp' ? -1 : 1) + drops.length) % drops.length;
-      if (drops[next]) game.send('select', undefined, drops[next].id);
-    } else if (e.key.length === 1 && /[\x20-\x7e]/.test(e.key)) {
-      e.preventDefault();
-      game.send('insert', e.key);
-    } else if (e.key === 'Enter') e.preventDefault();
-  }
   return (
     <>
       <div className="play-top">
@@ -679,29 +688,16 @@ export function BattleGame({ game, onLeave }: { game: Game; onLeave: () => void 
       <div className="battle-input-wrap" onClick={() => input.current?.focus()}>
         <Terminal size={20} />
         <code>
-          {mine.typing.buffer || (
+          {mine.typing.buffer ? (
+            Array.from(mine.typing.buffer).map((ch, i) => (
+              <TypedChar key={i} expected={target?.snippet.target[i] || ''} actual={ch} />
+            ))
+          ) : (
             <span className="placeholder">{target?.snippet.target || t('instructions')}</span>
           )}
         </code>
         <span className="input-caret" />
-        <textarea
-          aria-label="Battle input"
-          ref={input}
-          className="capture-input"
-          value=""
-          onChange={() => {}}
-          onKeyDown={key}
-          onPaste={(e) => e.preventDefault()}
-          onDrop={(e) => e.preventDefault()}
-          onCompositionStart={() => setIme(true)}
-          onCompositionEnd={() => setIme(false)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          disabled={!game.connected || b.status !== 'playing'}
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-        />
+        <textarea {...capture.props} aria-label="Battle input" className="capture-input" />
       </div>
       <p className="small-note">{ime ? t('ime') : !focused ? t('focus') : t('selectHint')}</p>
     </>

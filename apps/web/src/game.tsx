@@ -491,7 +491,6 @@ export function PracticeGame({ game, onLeave }: { game: Game; onLeave: () => voi
                 ))}
               </span>
             )}
-            <span className="editor-tag">AUTO-INDENT ON</span>
           </div>
         </div>
         <div className="typing-surface" onClick={() => input.current?.focus()}>
@@ -507,7 +506,6 @@ export function PracticeGame({ game, onLeave }: { game: Game; onLeave: () => voi
         </div>
         <div className="editor-footer">
           <span>{ime ? t('ime') : t('correctHint')}</span>
-          <span>UTF-8</span>
         </div>
       </section>
       <p className="small-note">{t('noPause')}</p>

@@ -10,7 +10,7 @@ test('languages, preferences, real timed practice, record persistence', async ({
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: '손끝을 깨울 시간.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '속도 측정', level: 1 })).toBeVisible();
   await page.screenshot({ path: 'output/playwright/home.png', fullPage: true });
   await page.getByRole('button', { name: 'Python', exact: true }).click();
   await expect(page.locator('.editor-toolbar')).toContainText('warmup.py');
@@ -29,7 +29,9 @@ test('languages, preferences, real timed practice, record persistence', async ({
     await input.press(ch === '\n' ? 'Enter' : ch === ' ' ? 'Space' : ch);
   }
   await expect(page.locator('.stat').filter({ hasText: '완료 블록' })).toContainText('1');
-  await expect(page.getByText('SESSION COMPLETE')).toBeVisible({ timeout: 40000 });
+  await expect(page.getByRole('heading', { name: '연습 완료', level: 1 })).toBeVisible({
+    timeout: 40000,
+  });
   await expect(page.getByText('기록 저장 완료')).toBeVisible();
   await page.getByRole('button', { name: '돌아가기', exact: true }).click();
   await page.getByRole('button', { name: '내 기록', exact: true }).click();

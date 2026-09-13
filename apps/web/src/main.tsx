@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import {
   Terminal,
-  ArrowUpRight,
   Timer,
   CalendarDays,
   Swords,
@@ -330,9 +329,8 @@ function App() {
           <span className="brand-icon">
             k<span>▪</span>
           </span>
-          keybit<span className="beta">BETA</span>
+          keybit
         </Link>
-        <div className="side-label">PLAYGROUND</div>
         <nav>
           {navItems.map(([Icon, key]) => (
             <button
@@ -346,24 +344,10 @@ function App() {
             </button>
           ))}
         </nav>
-        <div className="side-bottom">
-          <div className="pixel-grid">
-            {Array.from({ length: 25 }, (_, i) => (
-              <i key={i} />
-            ))}
-          </div>
-          <span>
-            LESS AUTOCOMPLETE.
-            <br />
-            MORE FINGERWORK.
-          </span>
-          <small>CONTENT {VERSION} / KEYBOARD ONLY</small>
-        </div>
       </aside>
       <div className="workspace">
         <header className="topbar">
           <span className="breadcrumb">
-            playground <ChevronRight size={14} />
             <b>{t(mode)}</b>
           </span>
           <div className="header-actions">
@@ -433,7 +417,6 @@ function App() {
             <>
               <div className="page-heading">
                 <div>
-                  <div className="eyebrow">PRIVATE MATCH / 1 VS 1</div>
                   <h1>{t('room')}</h1>
                   <p>{t('roomReady')}</p>
                 </div>
@@ -534,7 +517,7 @@ function App() {
             </>
           ) : mode === 'settings' ? (
             <>
-              <PageHeading title={t('settings')} subtitle="MAKE IT YOURS" />
+              <PageHeading title={t('settings')} />
               <section className="settings-panel">
                 <div className="setting-row">
                   <div>
@@ -596,11 +579,7 @@ function App() {
             </>
           ) : mode === 'records' ? (
             <>
-              <PageHeading
-                title={t('records')}
-                subtitle="SMALL RUNS. REAL PROGRESS."
-                description={t('recordNote')}
-              />
+              <PageHeading title={t('records')} description={t('recordNote')} />
               {userId && (
                 <div className="segmented">
                   <button
@@ -693,64 +672,9 @@ function App() {
             <>
               <div className="page-heading">
                 <div>
-                  <div className="eyebrow">
-                    {mode === 'speed'
-                      ? t('online')
-                      : mode === 'daily'
-                        ? 'ONE DAY. ONE COMMIT.'
-                        : 'PRIVATE MATCH / 1 VS 1'}
-                  </div>
-                  <h1>
-                    {t(
-                      mode === 'speed'
-                        ? 'homeHeading'
-                        : mode === 'daily'
-                          ? 'dailyTitle'
-                          : 'battleTitle',
-                    )}
-                  </h1>
-                  <p>
-                    {t(
-                      mode === 'speed' ? 'homeSub' : mode === 'daily' ? 'dailyNote' : 'battleNote',
-                    )}
-                  </p>
+                  <h1>{t(mode)}</h1>
+                  <p>{t(mode + 'Desc')}</p>
                 </div>
-                {mode === 'speed' && (
-                  <div className="keyboard-badge">
-                    <Keyboard size={30} />
-                    <span>
-                      LET’S
-                      <br />
-                      TYPE.
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="mode-grid">
-                {[
-                  [Timer, 'speed', '01'],
-                  [CalendarDays, 'daily', '02'],
-                  [Swords, 'battle', '03'],
-                ].map(([Icon, key, n]) => {
-                  const K = Icon as typeof Timer;
-                  return (
-                    <button
-                      key={key as string}
-                      onClick={() => go(key as Screen)}
-                      className={'mode-card ' + (mode === key ? 'active' : '')}
-                    >
-                      <div>
-                        <K size={21} />
-                        <span>{n as string}</span>
-                      </div>
-                      <h3>
-                        {t(key as string)}
-                        <ArrowUpRight size={18} />
-                      </h3>
-                      <p>{t(key + 'Desc')}</p>
-                    </button>
-                  );
-                })}
               </div>
               {mode === 'daily' && (
                 <div className="daily-summary">
@@ -772,7 +696,6 @@ function App() {
                     <span className="tiny-dot" />
                     {t('language')}
                   </span>
-                  <small>11 LANGUAGES / ONE KEYBOARD</small>
                 </div>
                 <div className="languages">
                   {LANGUAGES.map((l) => (
@@ -840,7 +763,6 @@ function App() {
                       }
                       maxLength={6}
                     />
-                    <p className="small-note">{t('battleDesc')}</p>
                     <button
                       className="secondary full-width desktop-play"
                       disabled={busy || joinCode.length !== 6}
@@ -859,7 +781,6 @@ function App() {
                         <Terminal size={16} />
                         {mode === 'daily' ? 'daily' : 'warmup'}.{EXTENSIONS[language]}
                       </span>
-                      <span className="editor-tag">AUTO-INDENT ON</span>
                     </div>
                     <div className="code-preview">
                       <Code
@@ -872,14 +793,10 @@ function App() {
                           )[0]
                         }
                       />
-                      <div className="preview-caption">
-                        <Command size={15} />
-                        {t('preview')}
-                      </div>
+                      <div className="preview-caption">{t('preview')}</div>
                     </div>
                     <div className="editor-footer">
                       <span>{t('correctHint')}</span>
-                      <span>UTF-8</span>
                     </div>
                   </section>
                   <div className="start-row">
@@ -963,12 +880,6 @@ function App() {
               )}
             </>
           )}
-          <footer className="page-footer">
-            <span>
-              <span className="tiny-dot" /> YOUR NEXT PERSONAL BEST STARTS HERE.
-            </span>
-            <span>keybit / 2026</span>
-          </footer>
         </main>
       </div>
       <dialog ref={dialog} onCancel={() => setExitTarget(null)}>
@@ -992,19 +903,10 @@ function App() {
     </div>
   );
 }
-function PageHeading({
-  title,
-  subtitle,
-  description,
-}: {
-  title: string;
-  subtitle: string;
-  description?: string;
-}) {
+function PageHeading({ title, description }: { title: string; description?: string }) {
   return (
     <div className="page-heading">
       <div>
-        <div className="eyebrow">{subtitle}</div>
         <h1>{title}</h1>
         {description && <p>{description}</p>}
       </div>
@@ -1153,14 +1055,10 @@ function ResultScreen({
   return (
     <div className="results">
       <div className="result-heading">
-        <div className={'result-icon ' + (r.outcome === 'loss' ? 'lost' : '')}>
-          <Trophy size={32} />
-        </div>
-        <div className="eyebrow">{r.mode === 'battle' ? 'MATCH COMPLETE' : 'SESSION COMPLETE'}</div>
         <h1>
           {r.mode === 'battle'
             ? t(r.outcome === 'win' ? 'wins' : r.outcome || 'draw')
-            : t(newBest ? 'resultHeading' : 'finishHeading')}
+            : t('finishHeading')}
         </h1>
         <p>
           {r.reason

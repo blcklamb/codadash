@@ -1,4 +1,4 @@
-# keybit Supabase 연결 마무리
+# codadash (코다대시) Supabase 연결 마무리
 
 프로젝트: `https://yoybgzldhrttgdrzznng.supabase.co`
 

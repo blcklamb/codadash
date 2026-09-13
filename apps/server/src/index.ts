@@ -687,7 +687,7 @@ app.use(
 );
 await recoverSessions();
 server.listen(Number(process.env.PORT || 3001), '0.0.0.0', () =>
-  console.log(`keybit server http://127.0.0.1:${process.env.PORT || 3001}`),
+  console.log(`codadash server http://127.0.0.1:${process.env.PORT || 3001}`),
 );
 process.on('SIGTERM', () => {
   draining = true;

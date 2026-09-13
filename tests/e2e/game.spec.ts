@@ -34,7 +34,7 @@ test('languages, preferences, real timed practice, record persistence', async ({
   });
   await expect(page.getByText('기록 저장 완료')).toBeVisible();
   await page.getByRole('button', { name: '돌아가기', exact: true }).click();
-  await page.getByRole('button', { name: '내 기록', exact: true }).click();
+  await page.getByRole('link', { name: '내 기록', exact: true }).click();
   await expect(page.locator('tbody tr')).toHaveCount(1);
   await expect(page.locator('tbody tr')).toContainText('Python');
   await page.reload();
@@ -78,7 +78,7 @@ test('daily calendar, bilingual UI, settings, mobile read-only surface', async (
   await page.goto('/daily');
   await expect(page.locator('.calendar-cell')).toHaveCount(30);
   await expect(page.locator('.reset-clock')).toContainText(/\d\d:\d\d:\d\d/);
-  await page.getByRole('button', { name: '설정', exact: true }).click();
+  await page.getByRole('link', { name: '설정', exact: true }).click();
   await page.getByRole('switch', { name: '효과음', exact: true }).click();
   await expect(page.getByRole('switch', { name: '효과음', exact: true })).toBeChecked();
   await page.getByLabel('UI language').selectOption('en');

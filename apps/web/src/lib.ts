@@ -161,7 +161,8 @@ void i18next.use(initReactI18next).init({
         loss: '패배',
         draw: '무승부',
         void: '무효 경기',
-        speedDesc: '제한 시간 동안 코드를 입력하고 타수와 정확도를 확인하세요.',
+        speedDesc:
+          '코드로 키보드 연습·타자 연습·타건 연습을 시작하세요. 타수와 정확도를 확인할 수 있습니다.',
         dailyDesc: '매일 한국 시간 0시에 바뀌는 코드로 연습하고 완료 기록을 쌓으세요.',
         battleDesc: '초대 코드로 친구와 연결해 1대1 코드 입력 대전을 진행하세요.',
         correctHint: '들여쓰기는 자동으로 · 오타는 Backspace로 수정',

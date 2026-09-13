@@ -149,7 +149,7 @@ test('legacy settings migrate separately from battle preferences', async ({ page
   await page.goto('/');
   await expect(page.getByLabel('난이도')).toHaveValue('advanced');
   await page.getByLabel('난이도').selectOption('intermediate');
-  await page.getByRole('button', { name: '1대1 대전', exact: true }).click();
+  await page.getByRole('link', { name: '1대1 대전', exact: true }).click();
   await expect(page.locator('.form-panel select')).toHaveValue('standard');
   await page.locator('.form-panel select').selectOption('beginner');
   await page.goto('/');

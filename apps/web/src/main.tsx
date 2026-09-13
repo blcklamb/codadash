@@ -71,6 +71,7 @@ import {
   type RoomView,
 } from './game';
 import './style.css';
+import { updateSeo } from './seo';
 const queryClient = new QueryClient();
 type Screen = 'speed' | 'daily' | 'battle' | 'records' | 'settings';
 const screens: Screen[] = ['speed', 'daily', 'battle', 'records', 'settings'];
@@ -87,6 +88,9 @@ function App() {
     location = useLocation();
   const path = location.pathname.split('/')[1],
     mode: Screen = screens.includes(path as Screen) ? (path as Screen) : 'speed';
+  useEffect(() => {
+    updateSeo(location.pathname, i18next.language);
+  }, [location.pathname, i18next.language]);
   const [language, setLanguageState] = useState<Language>(read('keybit.language', 'javascript')),
     [difficulty, setDifficulty] = useState<PracticeDifficulty>(() =>
       practiceDifficulty(
@@ -342,27 +346,31 @@ function App() {
         <Link
           to="/"
           className="brand"
+          aria-label="codadash (코다대시) 홈"
           onClick={(e) => {
             e.preventDefault();
             go('speed');
           }}
         >
-          <span className="brand-icon">
-            k<span>▪</span>
-          </span>
-          keybit
+          <img className="brand-icon" src="/favicon.svg" alt="" width="32" height="32" />
+          codadash
         </Link>
         <nav>
           {navItems.map(([Icon, key]) => (
-            <button
+            <Link
+              to={key === 'speed' ? '/' : '/' + key}
               className={mode === key ? 'nav-item selected' : 'nav-item'}
               key={key}
-              onClick={() => go(key)}
+              onClick={(event) => {
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                go(key);
+              }}
             >
               <Icon size={18} />
               {t(key)}
               {mode === key && <span className="nav-dot" />}
-            </button>
+            </Link>
           ))}
         </nav>
       </aside>

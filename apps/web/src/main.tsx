@@ -26,7 +26,8 @@ import {
   LogOut,
   RefreshCw,
   AlertCircle,
-} from 'lucide-react';
+} from './pixel-icons';
+import '@fontsource/press-start-2p/latin-400.css';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
 import '@fontsource/noto-sans-kr/400.css';
@@ -55,7 +56,10 @@ import {
   streaks,
   VERSION,
   type Language,
-  type Difficulty,
+  type PracticeDifficulty,
+  type BattleDifficulty,
+  practiceDifficulty,
+  battleDifficulty,
 } from '../../../packages/shared/src/content';
 import type { Result } from '../../../packages/shared/src/engine';
 import {
@@ -85,7 +89,14 @@ function App() {
   const path = location.pathname.split('/')[1],
     mode: Screen = screens.includes(path as Screen) ? (path as Screen) : 'speed';
   const [language, setLanguageState] = useState<Language>(read('keybit.language', 'javascript')),
-    [difficulty, setDifficulty] = useState<Difficulty>(read('keybit.difficulty', 'beginner')),
+    [difficulty, setDifficulty] = useState<PracticeDifficulty>(() =>
+      practiceDifficulty(
+        read('keybit.practiceDifficulty', read('keybit.difficulty', 'intermediate')),
+      ),
+    ),
+    [battleLevel, setBattleLevel] = useState<BattleDifficulty>(() =>
+      battleDifficulty(read('keybit.battleDifficulty', read('keybit.difficulty', 'beginner'))),
+    ),
     [duration, setDuration] = useState<30 | 60 | 120>(read('keybit.duration', 60));
   const [active, setActive] = useState<Active | null>(rememberedActive),
     [result, setResult] = useState<(Result & { saved: boolean }) | null>(null),
@@ -238,7 +249,9 @@ function App() {
     try {
       const r = await api<RoomView & { participantToken: string }>(
         join ? '/v1/rooms/join' : '/v1/rooms',
-        join ? { code: joinCode.trim().toUpperCase(), name } : { language, difficulty, name },
+        join
+          ? { code: joinCode.trim().toUpperCase(), name }
+          : { language, difficulty: battleLevel, name },
       );
       setResult(null);
       setActive({ id: r.id, kind: 'room', participantToken: r.participantToken });
@@ -344,7 +357,7 @@ function App() {
             <br />
             MORE FINGERWORK.
           </span>
-          <small>v0.1.0 / made for developers</small>
+          <small>CONTENT {VERSION} / KEYBOARD ONLY</small>
         </div>
       </aside>
       <div className="workspace">
@@ -791,8 +804,11 @@ function App() {
                     <label>
                       {t('difficulty')}
                       <select
-                        value={difficulty}
-                        onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+                        value={battleLevel}
+                        onChange={(e) => {
+                          setBattleLevel(battleDifficulty(e.target.value));
+                          write('keybit.battleDifficulty', e.target.value);
+                        }}
                       >
                         <option value="beginner">{t('beginner')}</option>
                         <option value="standard">{t('standard')}</option>
@@ -850,7 +866,7 @@ function App() {
                         snippet={
                           deck(
                             language,
-                            mode === 'daily' ? 'beginner' : difficulty,
+                            mode === 'daily' ? 'intermediate' : difficulty,
                             'block',
                             'preview',
                           )[0]
@@ -886,12 +902,12 @@ function App() {
                         aria-label={t('difficulty')}
                         value={difficulty}
                         onChange={(e) => {
-                          setDifficulty(e.target.value as Difficulty);
-                          write('keybit.difficulty', e.target.value);
+                          setDifficulty(e.target.value as PracticeDifficulty);
+                          write('keybit.practiceDifficulty', e.target.value);
                         }}
                       >
-                        <option value="beginner">{t('beginner')}</option>
-                        <option value="standard">{t('standard')}</option>
+                        <option value="intermediate">{t('intermediate')}</option>
+                        <option value="advanced">{t('advanced')}</option>
                       </select>
                     )}
                     <button

@@ -13,7 +13,8 @@ import {
   deck,
   streaks,
   type Language,
-  type Difficulty,
+  type BattleDifficulty,
+  practiceDifficulty,
 } from '../../../packages/shared/src/content';
 import {
   createPractice,
@@ -79,7 +80,7 @@ type Room = {
   id: string;
   code: string;
   language: Language;
-  difficulty: Difficulty;
+  difficulty: BattleDifficulty;
   members: Member[];
   hostId: string;
   updatedAt: number;
@@ -236,15 +237,19 @@ app.get('/v1/daily-challenges', (req, res) => {
     date,
     language: parsed.data,
     duration: 60,
-    difficulty: 'beginner',
+    difficulty: 'intermediate',
     version: VERSION,
     nextReset: Date.parse(date + 'T15:00:00Z'),
-    count: deck(parsed.data, 'beginner', 'block', `${date}:${parsed.data}:${VERSION}`).length,
+    count: deck(parsed.data, 'intermediate', 'block', `${date}:${parsed.data}:${VERSION}`).length,
   });
 });
 app.post('/v1/practice-sessions', auth, async (req, res) => {
   const parsed = config
     .extend({
+      difficulty: z
+        .enum(['beginner', 'standard', 'intermediate', 'advanced'])
+        .default('intermediate')
+        .transform(practiceDifficulty),
       mode: z.enum(['speed', 'daily']),
       duration: z.union([z.literal(30), z.literal(60), z.literal(120)]).default(60),
     })

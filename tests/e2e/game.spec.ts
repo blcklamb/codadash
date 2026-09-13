@@ -19,8 +19,9 @@ test('languages, preferences, real timed practice, record persistence', async ({
   const input = page.getByRole('textbox', { name: 'Code input' });
   await expect(input).toBeEnabled();
   await input.focus();
-  const lines = await page.locator('.code-lines code').allTextContents();
-  const code = lines.join('\n').replaceAll('↵', '').replaceAll('·', ' ');
+  const code = await page
+    .locator('.typing-surface [data-expected]')
+    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-expected')).join(''));
   await input.pressSequentially('!');
   await expect(page.locator('.typed-error').first()).toBeVisible();
   await input.press('Backspace');

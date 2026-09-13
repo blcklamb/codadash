@@ -45,3 +45,25 @@ describe('bounded local archive', () => {
     expect(Object.values(a.bests).map((r) => r.id)).toEqual(['two', 'other']);
   });
 });
+
+it('preserves legacy records and separates content versions and new practice levels', () => {
+  const old = result('legacy', 999);
+  let archive = recordArchive(emptyArchive(), old);
+  archive = recordArchive(archive, {
+    ...result('intermediate'),
+    difficulty: 'intermediate',
+    version: '2.0.0',
+  });
+  archive = recordArchive(archive, {
+    ...result('advanced'),
+    difficulty: 'advanced',
+    version: '2.0.0',
+  });
+  archive = recordArchive(archive, {
+    ...result('future'),
+    difficulty: 'intermediate',
+    version: '3.0.0',
+  });
+  expect(archive.recent.find((r) => r.id === old.id)).toEqual(old);
+  expect(Object.values(archive.bests)).toHaveLength(4);
+});

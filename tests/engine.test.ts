@@ -74,7 +74,7 @@ describe('daily practice', () => {
       b = createPractice('b', 'two', 'python', 'beginner', 120, 'daily', now);
     expect(a.cards).toEqual(b.cards);
     expect(a.duration).toBe(60);
-    expect(a.difficulty).toBe('beginner');
+    expect(a.difficulty).toBe('intermediate');
     tickPractice(a, now + 65000);
     expect(a.date).toBe('2026-09-09');
     expect(dayKey(now + 65000)).toBe('2026-09-10');
@@ -109,11 +109,11 @@ describe('content', () => {
         );
         expect(s.target).not.toContain('\n');
       } else {
-        expect(size, s.id).toBeGreaterThanOrEqual(s.difficulty === 'beginner' ? 40 : 100);
-        expect(size, s.id).toBeLessThanOrEqual(s.difficulty === 'beginner' ? 100 : 200);
-        expect(s.source.split('\n').length, s.id).toBeLessThanOrEqual(
-          s.difficulty === 'beginner' ? 4 : 6,
-        );
+        expect(s.target).toBe(targetOf(s.source));
+        expect(s.source).not.toContain('checkpoint');
+        const lines = s.source.split('\n').length;
+        expect(lines, s.id).toBeGreaterThanOrEqual(s.difficulty === 'intermediate' ? 6 : 8);
+        expect(lines, s.id).toBeLessThanOrEqual(s.difficulty === 'intermediate' ? 10 : 14);
       }
     }
   });
@@ -230,4 +230,26 @@ describe('battle rules', () => {
     tickBattle(b, 20000);
     expect(b.winner).toBe('b');
   });
+});
+
+it('migrates legacy practice levels and keeps battle decks separate', () => {
+  for (const [old, current] of [
+    ['beginner', 'intermediate'],
+    ['standard', 'advanced'],
+  ] as const) {
+    const p = createPractice('legacy', 'owner', 'javascript', old, 60, 'speed', 0);
+    expect(p.difficulty).toBe(current);
+    expect(p.cards).toHaveLength(10);
+    expect(p.cards.every((card) => card.difficulty === current && card.kind === 'block')).toBe(
+      true,
+    );
+  }
+  for (const language of LANGUAGES) {
+    for (const difficulty of ['intermediate', 'advanced'] as const) {
+      const cards = deck(language, difficulty, 'block', 'seed');
+      expect(cards).toHaveLength(10);
+      expect(new Set(cards.map((card) => card.source)).size).toBe(10);
+      expect(deck(language, difficulty, 'block', 'seed')).toEqual(cards);
+    }
+  }
 });

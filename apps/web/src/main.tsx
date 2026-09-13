@@ -315,6 +315,27 @@ function App() {
   const showResult = !!result,
     playing = active && !showResult && (game.practice || game.battle),
     lobby = active?.kind === 'room' && !game.battle;
+  const pageTitle = result
+    ? result.mode === 'battle'
+      ? t(result.outcome === 'win' ? 'wins' : result.outcome || 'draw')
+      : t('finishHeading')
+    : lobby
+      ? t('room')
+      : t(mode);
+  const pageDescription = result
+    ? result.reason
+      ? t('reason_' + result.reason)
+      : `${LANGUAGE_NAMES[result.language]} · ${t(result.difficulty)} · ${result.duration}s`
+    : playing
+      ? undefined
+      : lobby
+        ? t('roomReady')
+        : mode === 'records'
+          ? t('recordNote')
+          : mode === 'settings'
+            ? undefined
+            : t(mode + 'Desc');
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -347,10 +368,17 @@ function App() {
       </aside>
       <div className="workspace">
         <header className="topbar">
-          <span className="breadcrumb">
-            <b>{t(mode)}</b>
-          </span>
+          <div className="page-title">
+            <h1>{pageTitle}</h1>
+            {pageDescription && <p>{pageDescription}</p>}
+          </div>
           <div className="header-actions">
+            {lobby && !showResult && !playing && (
+              <button className="text-button" onClick={leave}>
+                <ArrowLeft size={16} />
+                {t('leave')}
+              </button>
+            )}
             <button
               className="locale-switch"
               aria-label="Change language"
@@ -415,16 +443,6 @@ function App() {
             )
           ) : lobby ? (
             <>
-              <div className="page-heading">
-                <div>
-                  <h1>{t('room')}</h1>
-                  <p>{t('roomReady')}</p>
-                </div>
-                <button className="text-button" onClick={leave}>
-                  <ArrowLeft size={16} />
-                  {t('leave')}
-                </button>
-              </div>
               {game.room ? (
                 <section className="lobby-panel">
                   <div className="room-code">
@@ -517,7 +535,6 @@ function App() {
             </>
           ) : mode === 'settings' ? (
             <>
-              <PageHeading title={t('settings')} />
               <section className="settings-panel">
                 <div className="setting-row">
                   <div>
@@ -579,7 +596,6 @@ function App() {
             </>
           ) : mode === 'records' ? (
             <>
-              <PageHeading title={t('records')} description={t('recordNote')} />
               {userId && (
                 <div className="segmented">
                   <button
@@ -670,12 +686,6 @@ function App() {
             </>
           ) : (
             <>
-              <div className="page-heading">
-                <div>
-                  <h1>{t(mode)}</h1>
-                  <p>{t(mode + 'Desc')}</p>
-                </div>
-              </div>
               {mode === 'daily' && (
                 <div className="daily-summary">
                   <div>
@@ -903,16 +913,7 @@ function App() {
     </div>
   );
 }
-function PageHeading({ title, description }: { title: string; description?: string }) {
-  return (
-    <div className="page-heading">
-      <div>
-        <h1>{title}</h1>
-        {description && <p>{description}</p>}
-      </div>
-    </div>
-  );
-}
+
 function ResetClock() {
   const { t } = useTranslation();
   const [now, setNow] = useState(Date.now());
@@ -1054,24 +1055,14 @@ function ResultScreen({
       .slice(0, 3);
   return (
     <div className="results">
-      <div className="result-heading">
-        <h1>
-          {r.mode === 'battle'
-            ? t(r.outcome === 'win' ? 'wins' : r.outcome || 'draw')
-            : t('finishHeading')}
-        </h1>
-        <p>
-          {r.reason
-            ? t('reason_' + r.reason)
-            : `${LANGUAGE_NAMES[r.language]} · ${t(r.difficulty)} · ${r.duration}s`}
-        </p>
-        {newBest && (
+      {newBest && (
+        <div className="result-heading">
           <span className="new-best">
             <Trophy size={14} />
             {t('newBest')}
           </span>
-        )}
-      </div>
+        </div>
+      )}
       <StatsRow
         values={[
           {

@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101310" />
+    <script>
+      (() => {
+        try {
+          const settings = JSON.parse(localStorage.getItem('keybit.settings') || '{}');
+          const theme = settings.theme === 'light' ? 'light' : 'dark';
+          document.documentElement.dataset.theme = theme;
+          document.querySelector('meta[name="theme-color"]').content = theme === 'light' ? '#f4f7ef' : '#101310';
+        } catch {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
     <!-- seo:start -->
     <title>codadash (코다대시) | 코드 타자 연습 · 키보드 연습</title>
     <meta
@@ -62,6 +74,17 @@
         .boot-screen__dots {
           animation: none;
         }
+      }
+      :root[data-theme='light'] .boot-screen {
+        color: #1d281c;
+        background: #f4f7ef;
+      }
+      :root[data-theme='light'] .boot-screen__mark {
+        color: #f4f7ef;
+        background: #4b7f2c;
+      }
+      :root[data-theme='light'] .boot-screen__message {
+        color: #52614d;
       }
     </style>
   </head>

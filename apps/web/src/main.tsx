@@ -179,6 +179,10 @@ function App() {
     document.documentElement.dataset.motion = settings.reduceMotion ? 'reduced' : 'normal';
     document.documentElement.dataset.effects = settings.effects;
     document.documentElement.dataset.shake = settings.shake ? 'on' : 'off';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      'content',
+      settings.theme === 'light' ? '#f4f7ef' : '#101310',
+    );
     write('keybit.settings', settings);
   }, [settings]);
   useEffect(() => {

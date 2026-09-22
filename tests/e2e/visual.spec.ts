@@ -35,3 +35,32 @@ test('theme selection applies immediately and persists after reload', async ({ p
   await page.getByLabel('Theme').selectOption('dark');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
+
+test('light mode uses light surfaces across the app', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('keybit.locale', '"en"');
+    localStorage.setItem('keybit.settings', JSON.stringify({ theme: 'light' }));
+  });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#f4f7ef');
+
+  const surfaces = await page.evaluate(() => {
+    const read = (selector: string) => getComputedStyle(document.querySelector(selector)!).backgroundColor;
+    return {
+      body: read('body'),
+      sidebar: read('.sidebar'),
+      editor: read('.editor'),
+    };
+  });
+  expect(surfaces).toEqual({
+    body: 'rgb(244, 247, 239)',
+    sidebar: 'rgb(255, 255, 255)',
+    editor: 'rgb(255, 255, 255)',
+  });
+
+  await page.goto('/settings');
+  await page.getByLabel('Theme').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#101310');
+});

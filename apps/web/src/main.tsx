@@ -175,6 +175,7 @@ function App() {
     document.documentElement.lang = i18next.language;
   }, [i18next.language]);
   useEffect(() => {
+    document.documentElement.dataset.theme = settings.theme;
     document.documentElement.dataset.motion = settings.reduceMotion ? 'reduced' : 'normal';
     document.documentElement.dataset.effects = settings.effects;
     document.documentElement.dataset.shake = settings.shake ? 'on' : 'off';
@@ -559,6 +560,25 @@ function App() {
                   >
                     <option value="ko">한국어</option>
                     <option value="en">English</option>
+                  </select>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <h3>{t('theme')}</h3>
+                    <p>{t('themeNote')}</p>
+                  </div>
+                  <select
+                    aria-label={t('theme')}
+                    value={settings.theme}
+                    onChange={(e) =>
+                      setSettings((s) => ({
+                        ...s,
+                        theme: e.target.value === 'light' ? 'light' : 'dark',
+                      }))
+                    }
+                  >
+                    <option value="dark">{t('dark')}</option>
+                    <option value="light">{t('light')}</option>
                   </select>
                 </div>
                 {(['sound', 'effects', 'shake', 'reduceMotion'] as const).map((key) => (

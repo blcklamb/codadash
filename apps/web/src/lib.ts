@@ -92,12 +92,14 @@ export function saveLocal(result: Result) {
   return write('keybit.history', recordArchive(localArchive(), result));
 }
 export type Settings = {
+  theme: 'light' | 'dark';
   sound: boolean;
   effects: 'off' | 'normal';
   shake: boolean;
   reduceMotion: boolean;
 };
 export const settingsDefault: Settings = {
+  theme: 'dark',
   sound: false,
   effects: 'normal',
   shake: false,
@@ -147,6 +149,10 @@ void i18next.use(initReactI18next).init({
         effects: '시각 효과',
         shake: '화면 흔들림',
         reduceMotion: '모션 감소',
+        theme: '테마',
+        light: '라이트 모드',
+        dark: '다크 모드',
+        themeNote: '화면의 색상 테마를 선택하세요',
         saved: '기록 저장 완료',
         saving: '기록 저장 중',
         mobile: '타자 연습과 대전은 PC 또는 노트북에서 이용해 주세요.',
@@ -278,6 +284,10 @@ void i18next.use(initReactI18next).init({
         effects: 'Visual effects',
         shake: 'Screen shake',
         reduceMotion: 'Reduce motion',
+        theme: 'Theme',
+        light: 'Light mode',
+        dark: 'Dark mode',
+        themeNote: 'Choose the color theme for the interface',
         saved: 'Record saved',
         saving: 'Saving record',
         mobile: 'Use a PC or laptop keyboard to practice and battle.',

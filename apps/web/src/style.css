@@ -1,14 +1,18 @@
 @import 'tailwindcss';
 :root {
   font-family: 'Noto Sans KR', sans-serif;
-  color: #e3e8d6;
-  background: #101310;
+  color: var(--text);
+  background: var(--bg);
   font-synthesis: none;
   font-size: 16px;
   --bg: #101310;
   --panel: #171c17;
   --line: #394537;
   --muted: #9ca894;
+  --text: #e3e8d6;
+  --surface: #1b231a;
+  --surface-raised: #24331b;
+  --shadow: #090c08;
   --mint: #a8e66f;
   --purple: #edac67;
   --error: #ff7770;
@@ -2079,3 +2083,107 @@ input {
     animation: none;
   }
 }
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f4f7ef;
+  --panel: #ffffff;
+  --line: #b6c4aa;
+  --muted: #52614d;
+  --text: #1d281c;
+  --surface: #e8f0df;
+  --surface-raised: #d8e9c3;
+  --shadow: #9baa91;
+  --mint: #4b7f2c;
+  --purple: #9a5b16;
+  --error: #b33832;
+  --yellow: #9a5b16;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+:root[data-theme='light'] body,
+:root[data-theme='light'] button,
+:root[data-theme='light'] input,
+:root[data-theme='light'] select {
+  color: var(--text);
+}
+:root[data-theme='light'] body {
+  background: var(--bg);
+}
+:root[data-theme='light'] .app,
+:root[data-theme='light'] main,
+:root[data-theme='light'] .page,
+:root[data-theme='light'] .settings-panel,
+:root[data-theme='light'] .account-panel,
+:root[data-theme='light'] .editor,
+:root[data-theme='light'] .stat,
+:root[data-theme='light'] .table-wrap,
+:root[data-theme='light'] .form-panel,
+:root[data-theme='light'] .lobby-panel,
+:root[data-theme='light'] .player-card,
+:root[data-theme='light'] .rain-board,
+:root[data-theme='light'] .result-details > section,
+:root[data-theme='light'] .battle-recap,
+:root[data-theme='light'] dialog {
+  background-color: var(--panel);
+  color: var(--text);
+  border-color: var(--line);
+}
+:root[data-theme='light'] .editor-toolbar,
+:root[data-theme='light'] .editor-footer,
+:root[data-theme='light'] .battle-input-wrap,
+:root[data-theme='light'] .nav-item.selected,
+:root[data-theme='light'] .languages button.on,
+:root[data-theme='light'] .segmented button.on {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--line);
+}
+:root[data-theme='light'] .primary {
+  background: var(--mint);
+  border-color: var(--mint);
+  color: #f7fff1;
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+:root[data-theme='light'] .secondary,
+:root[data-theme='light'] select,
+:root[data-theme='light'] input,
+:root[data-theme='light'] .languages button,
+:root[data-theme='light'] .segmented {
+  background: #fff;
+  color: var(--text);
+  border-color: var(--line);
+}
+:root[data-theme='light'] .nav-item.selected,
+:root[data-theme='light'] .languages button.on,
+:root[data-theme='light'] .segmented button.on {
+  color: var(--mint);
+  box-shadow: inset 4px 0 var(--mint);
+}
+:root[data-theme='light'] .editor,
+:root[data-theme='light'] .stat,
+:root[data-theme='light'] .settings-panel,
+:root[data-theme='light'] .account-panel,
+:root[data-theme='light'] .table-wrap,
+:root[data-theme='light'] .form-panel,
+:root[data-theme='light'] .lobby-panel,
+:root[data-theme='light'] .player-card,
+:root[data-theme='light'] .rain-board,
+:root[data-theme='light'] dialog {
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+:root[data-theme='light'] .line-number,
+:root[data-theme='light'] .editor-footer,
+:root[data-theme='light'] .preview-caption {
+  color: var(--muted);
+}
+:root[data-theme='light'] .syntax-keyword { color: #9a5b16; }
+:root[data-theme='light'] .syntax-string { color: #28724c; }
+:root[data-theme='light'] .syntax-number { color: #7a5b00; }
+:root[data-theme='light'] .new-best {
+  background: #fff4d9;
+  border-color: #c58b2d;
+}
+:root[data-theme='light'] .typed-error { background: #b3383226; }
+:root[data-theme='light'] .caret-char { background: #4b7f2c2b; }

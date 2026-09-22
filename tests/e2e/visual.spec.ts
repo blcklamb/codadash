@@ -19,3 +19,19 @@ test('pixel screens remain usable at desktop and mobile widths', async ({ page }
     }
   }
 });
+
+test('theme selection applies immediately and persists after reload', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('keybit.locale', '"en"');
+    localStorage.removeItem('keybit.settings');
+  });
+  await page.goto('/settings');
+  const theme = page.getByLabel('Theme');
+  await theme.selectOption('light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.reload();
+  await expect(page.getByLabel('Theme')).toHaveValue('light');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.getByLabel('Theme').selectOption('dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});

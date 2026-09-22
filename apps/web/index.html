@@ -12,9 +12,69 @@
     />
     <!-- seo:end -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      .boot-screen {
+        min-height: 100vh;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 12px;
+        padding: 24px;
+        color: #e3e8d6;
+        background: #101310;
+        font-family: 'JetBrains Mono', monospace;
+        text-align: center;
+      }
+      .boot-screen__mark {
+        display: grid;
+        place-items: center;
+        width: 48px;
+        height: 48px;
+        color: #101310;
+        background: #a8e66f;
+        font-size: 20px;
+        font-weight: 600;
+      }
+      .boot-screen__brand {
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .boot-screen__message {
+        color: #9ca894;
+        font-size: 13px;
+      }
+      .boot-screen__dots {
+        display: inline-block;
+        width: 18px;
+        overflow: hidden;
+        vertical-align: bottom;
+        animation: boot-dots 1.2s steps(4, end) infinite;
+      }
+      @keyframes boot-dots {
+        from {
+          width: 0;
+        }
+        to {
+          width: 18px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-screen__dots {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"><!-- intro:start --><!-- intro:end --></div>
+    <div id="root">
+      <div class="boot-screen" role="status" aria-live="polite" aria-busy="true">
+        <div class="boot-screen__mark" aria-hidden="true">&gt;_</div>
+        <div class="boot-screen__brand">codadash</div>
+        <div class="boot-screen__message">
+          Loading workspace<span class="boot-screen__dots" aria-hidden="true">...</span>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

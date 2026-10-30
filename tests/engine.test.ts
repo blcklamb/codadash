@@ -4,6 +4,8 @@ import {
   LANGUAGES,
   deck,
   targetOf,
+  BATTLE_VERSION,
+  VERSION,
   dayKey,
   streaks,
 } from '../packages/shared/src/content';
@@ -17,6 +19,7 @@ import {
   tickPractice,
   createBattle,
   tickBattle,
+  timings,
   inputBattle,
   battleResults,
 } from '../packages/shared/src/engine';
@@ -102,12 +105,19 @@ describe('content', () => {
       const size = s.target.length;
       if (s.kind === 'rain') {
         expect(size, s.id + ': ' + s.source).toBeGreaterThanOrEqual(
-          s.difficulty === 'beginner' ? 8 : 12,
+          s.difficulty === 'beginner' ? 24 : 40,
         );
         expect(size, s.id + ': ' + s.source).toBeLessThanOrEqual(
-          s.difficulty === 'beginner' ? 18 : 28,
+          s.difficulty === 'beginner' ? 40 : 64,
         );
-        expect(s.target).not.toContain('\n');
+        expect(s.source.split('\n').length).toBeGreaterThanOrEqual(2);
+        expect(s.source.split('\n').length).toBeLessThanOrEqual(3);
+        for (const line of s.target.split('\n')) expect(line.length).toBeLessThanOrEqual(28);
+        expect(s.target).toBe(targetOf(s.source));
+        expect(s.version).toBe(BATTLE_VERSION);
+        if (s.language !== 'bash') expect(s.target).toMatch(/[a-zA-Z_]\w*\(/);
+        if (['javascript', 'typescript'].includes(s.language))
+          expect(() => new Function(s.source)).not.toThrow();
       } else {
         expect(s.target).toBe(targetOf(s.source));
         expect(s.source).not.toContain('checkpoint');
@@ -121,6 +131,7 @@ describe('content', () => {
     for (const l of LANGUAGES)
       for (const d of ['beginner', 'standard'] as const) {
         const a = deck(l, d, 'rain', 'seed');
+        expect(a).toHaveLength(15);
         expect(new Set(a.map((s) => s.source)).size).toBe(a.length);
         expect(a).toEqual(deck(l, d, 'rain', 'seed'));
       }
@@ -153,13 +164,14 @@ describe('battle rules', () => {
   });
   it('sends one attack after three clean clears, warning is one second', () => {
     const b = battle();
-    for (const time of [3000, 7500, 12000]) {
+    for (const time of [3000, 9750, 16500]) {
       tickBattle(b, time);
       clear(b, 'a', time);
     }
     expect(b.players[0].sent).toBe(1);
     const attack = b.players[1].drops.find((d) => d.attack)!;
-    expect(attack.spawnAt).toBe(13000);
+    expect(attack.spawnAt).toBe(17500);
+    expect(attack.expiresAt - attack.spawnAt).toBe(24000);
     expect(b.players[0].combo).toBe(0);
   });
   it('does not count a corrected block toward clean combo', () => {
@@ -173,11 +185,11 @@ describe('battle rules', () => {
   });
   it('does not charge attacks from attack code clears', () => {
     const b = battle();
-    for (const time of [3000, 7500, 12000]) {
+    for (const time of [3000, 9750, 16500]) {
       tickBattle(b, time);
       clear(b, 'a', time);
     }
-    clear(b, 'b', 13000, true);
+    clear(b, 'b', 17500, true);
     expect(b.players[1].combo).toBe(0);
     expect(b.players[1].baseChars).toBe(0);
   });
@@ -185,7 +197,7 @@ describe('battle rules', () => {
     const b = battle();
     tickBattle(b, 3000);
     for (const p of b.players) p.hp = 1;
-    tickBattle(b, 19000);
+    tickBattle(b, 27000);
     expect(b.status).toBe('finished');
     expect(b.winner).toBe(null);
     expect(b.reason).toBe('simultaneous');
@@ -252,4 +264,65 @@ it('migrates legacy practice levels and keeps battle decks separate', () => {
       expect(deck(language, difficulty, 'block', 'seed')).toEqual(cards);
     }
   }
+});
+
+it('uses slower battle timings at phase boundaries and independent content versions', () => {
+  for (const difficulty of ['beginner', 'standard'] as const) {
+    const b = createBattle(
+      'timing',
+      'javascript',
+      difficulty,
+      [
+        { id: 'a', name: 'A' },
+        { id: 'b', name: 'B' },
+      ],
+      0,
+    );
+    const intervals = difficulty === 'beginner' ? [6750, 6000, 5250] : [6000, 5250, 4500];
+    const falls = difficulty === 'beginner' ? [24000, 22500, 21000] : [18000, 16500, 15000];
+    for (const [offset, phase] of [
+      [0, 0],
+      [39999, 0],
+      [40000, 1],
+      [79999, 1],
+      [80000, 2],
+    ]) {
+      expect(timings(b, b.startAt + offset)).toEqual({
+        interval: intervals[phase],
+        fall: falls[phase],
+      });
+    }
+    tickBattle(b, b.startAt);
+    const first = b.players[0].drops[0];
+    expect(first.expiresAt).toBe(b.startAt + falls[0]);
+    tickBattle(b, b.startAt + intervals[0] - 1);
+    expect(b.players[0].drops).toHaveLength(1);
+    tickBattle(b, b.startAt + intervals[0]);
+    expect(b.players[0].drops).toHaveLength(2);
+    expect(b.players[0].drops).toEqual(b.players[1].drops);
+    expect(battleResults(b, b.startAt)[0].version).toBe(BATTLE_VERSION);
+  }
+  const p = createPractice('p', 'a', 'javascript', 'intermediate', 60, 'daily', 0);
+  expect(p.cards.every((s) => s.version === VERSION)).toBe(true);
+  expect(VERSION).toBe('2.0.0');
+});
+
+it('types multiline battle code without counting indentation and backspaces across newlines', () => {
+  const b = battle();
+  tickBattle(b, b.startAt);
+  const p = b.players[0],
+    drop = p.drops[0];
+  const [line] = drop.snippet.target.split('\n');
+  const type = (char: string) =>
+    inputBattle(b, p.id, { seq: p.typing.lastSeq + 1, op: 'insert', char }, b.startAt);
+  for (const ch of line + '\n') type(ch);
+  expect(p.typing.buffer).toBe(line + '\n');
+  expect(p.typing.attempts).toBe(line.length + 1);
+  inputBattle(b, p.id, { seq: p.typing.lastSeq + 1, op: 'backspace' }, b.startAt);
+  expect(p.typing.buffer).toBe(line);
+  for (const ch of drop.snippet.target.slice(line.length)) type(ch);
+  expect(p.baseChars).toBe(drop.snippet.target.length);
+  expect(p.typing.completed).toBe(1);
+  expect(p.combo).toBe(1);
+  expect(p.typing.buffer).toBe('');
 });

@@ -131,8 +131,11 @@ test('battle IME recovery, actual wrong character, clear and target selection', 
   await input.press('Escape');
   await expect(pa.locator('.own .typed-error')).toHaveCount(0);
   await input.press('Enter');
+  await expect(pa.locator('.battle-input-wrap [data-actual]')).toHaveCount(1);
+  await expect(pa.locator('.battle-input-wrap .typed-error')).toHaveText('↵');
+  await input.press('Escape');
   await expect(pa.locator('.battle-input-wrap [data-actual]')).toHaveCount(0);
-  await expect(pa.locator('.own .drop')).toHaveCount(2, { timeout: 6000 });
+  await expect(pa.locator('.own .drop')).toHaveCount(2, { timeout: 8000 });
   const first = await pa.locator('.own .target').textContent();
   await input.press('ArrowDown');
   await expect(pa.locator('.own .target')).not.toHaveText(first!);

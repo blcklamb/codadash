@@ -1,4 +1,5 @@
 import { BLOCKS } from './blocks';
+import { RAIN } from './rain';
 export const LANGUAGES = [
   'javascript',
   'typescript',
@@ -57,28 +58,12 @@ export type Snippet = {
   version: string;
 };
 export const VERSION = '2.0.0';
+export const BATTLE_VERSION = '3.0.0';
 export const targetOf = (source: string) =>
   source
     .split('\n')
     .map((line) => line.replace(/^ +/, ''))
     .join('\n');
-function rain(lang: Language, hard: boolean): string[] {
-  const semicolon = !['python', 'go', 'swift', 'bash'].includes(lang);
-  const end = semicolon ? ';' : '';
-  const names = ['score', 'total', 'count', 'limit', 'speed'];
-  if (lang === 'bash')
-    return names.flatMap((n, i) =>
-      hard
-        ? [`${n}=$((\$${n} + ${i + 1}))`, `echo "\$${n} bits"`, `printf "%s" "\$${n}"`]
-        : [`${n}=$((1 + ${i}))`, `echo "$${n}"`, `${n}="ready"`],
-    );
-  const result = names.flatMap((n, i) =>
-    hard
-      ? [`${n} = ${n} + ${i + 10}${end}`, `${n} = ${n} * 2${end}`, `${n} = ${n} - 1${end}`]
-      : [`${n} = ${i + 10}${end}`, `${n} = 100${end}`, `${n} = 42${end}`],
-  );
-  return result;
-}
 export const SNIPPETS: Snippet[] = LANGUAGES.flatMap((language) => [
   ...(['intermediate', 'advanced'] as const).flatMap((difficulty) =>
     BLOCKS[language][difficulty].map((source, i) => ({
@@ -92,14 +77,14 @@ export const SNIPPETS: Snippet[] = LANGUAGES.flatMap((language) => [
     })),
   ),
   ...(['beginner', 'standard'] as const).flatMap((difficulty) =>
-    rain(language, difficulty === 'standard').map((source, i) => ({
+    RAIN[language][difficulty].map((source, i) => ({
       id: `${language}-${difficulty}-rain-${i}`,
       language,
       difficulty,
       kind: 'rain' as const,
       source,
-      target: source,
-      version: VERSION,
+      target: targetOf(source),
+      version: BATTLE_VERSION,
     })),
   ),
 ]);

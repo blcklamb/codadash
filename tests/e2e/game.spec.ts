@@ -61,9 +61,15 @@ test('real invite match, same state, reconnect and forfeit', async ({ browser })
   await pb.getByRole('button', { name: '준비 완료', exact: true }).click();
   await expect(pa.getByRole('textbox', { name: 'Battle input' })).toBeEnabled();
   await expect(pb.getByRole('textbox', { name: 'Battle input' })).toBeEnabled();
-  const text = await pa.locator('.own .drop.target').textContent();
-  await expect(pb.locator('.own .drop.target')).toHaveText(text!);
-  await pa.getByRole('textbox', { name: 'Battle input' }).pressSequentially(text!, { delay: 80 });
+  const text = await pa
+    .locator('.own .drop.target [data-expected]')
+    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-expected')).join(''));
+  const peerText = await pb
+    .locator('.own .drop.target [data-expected]')
+    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute('data-expected')).join(''));
+  expect(peerText).toBe(text);
+  const input = pa.getByRole('textbox', { name: 'Battle input' });
+  for (const ch of text) await input.press(ch === '\n' ? 'Enter' : ch === ' ' ? 'Space' : ch);
   await expect(pa.locator('.own .board-bottom')).not.toContainText('0 chars');
   await pa.reload();
   await expect(pa.getByRole('textbox', { name: 'Battle input' })).toBeEnabled();

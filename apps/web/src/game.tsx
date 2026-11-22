@@ -337,12 +337,23 @@ export function Overflow({ buffer, length }: { buffer: string; length: number })
     </>
   );
 }
-export function Code({ snippet, typing }: { snippet: Snippet; typing?: Typing }) {
+export function Code({
+  snippet,
+  typing,
+  compact = false,
+}: {
+  snippet: Snippet;
+  typing?: Typing;
+  compact?: boolean;
+}) {
   let position = 0;
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!typing) return;
-    const viewport = root.current?.closest('.typing-surface');
+    const viewport =
+      compact && root.current?.closest('.battle-input-wrap')
+        ? root.current
+        : root.current?.closest('.typing-surface');
     const caret = root.current?.querySelector('.caret-char');
     if (!viewport || !caret) return;
     const bounds = viewport.getBoundingClientRect(),
@@ -352,9 +363,9 @@ export function Code({ snippet, typing }: { snippet: Snippet; typing?: Typing })
     if (cursor.top < bounds.top + 24) viewport.scrollTop -= bounds.top + 24 - cursor.top;
     if (cursor.right > bounds.right - 24) viewport.scrollLeft += cursor.right - bounds.right + 48;
     if (cursor.left < bounds.left + 48) viewport.scrollLeft -= bounds.left + 48 - cursor.left;
-  }, [typing?.buffer, snippet.id]);
+  }, [typing?.buffer, snippet.id, compact]);
   return (
-    <div className="code-lines" ref={root}>
+    <div className={'code-lines' + (compact ? ' compact-code' : '')} ref={root}>
       {snippet.source.split('\n').map((line, i, lines) => {
         const indent = line.match(/^ */)![0].length;
         const colors: Record<number, string> = {};
@@ -366,7 +377,7 @@ export function Code({ snippet, typing }: { snippet: Snippet; typing?: Typing })
         }
         return (
           <div className="code-line" key={i}>
-            <span className="line-number">{i + 1}</span>
+            {!compact && <span className="line-number">{i + 1}</span>}
             <code>
               {Array.from(line).map((ch, j) => {
                 if (j < indent)
@@ -532,19 +543,37 @@ function Board({
     const timer = setTimeout(() => setHit(false), 280);
     return () => clearTimeout(timer);
   }, [player.hp]);
+  // Seven rows fit the maximum overlapping base drops plus two attack drops.
+  // Each card has three code lines at most, so its bounds are independent of text width.
+  const cardHeight = 76;
+  const gap = 8;
+  const fieldHeight = 600;
+  const field = useRef<HTMLDivElement>(null);
+  const [columns, setColumns] = useState(1);
+  useEffect(() => {
+    const element = field.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setColumns(entry.contentRect.width >= 500 ? 2 : 1);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   const positions: Record<string, number> = {};
-  for (let col = 0; col < 2; col++) {
+  for (let col = 0; col < columns; col++) {
     const drops = player.drops
-      .filter((d) => d.lane % 2 === col)
+      .filter((d) => d.lane % columns === col)
       .sort(
         (a, b) =>
           (now - a.spawnAt) / (a.expiresAt - a.spawnAt) -
-          (now - b.spawnAt) / (b.expiresAt - b.spawnAt),
+            (now - b.spawnAt) / (b.expiresAt - b.spawnAt) || a.id.localeCompare(b.id),
       );
-    let prior = -40;
+    let prior = -cardHeight - gap;
     drops.forEach((d, index) => {
-      const wanted = Math.max(0, Math.min(1, (now - d.spawnAt) / (d.expiresAt - d.spawnAt))) * 300;
-      const y = Math.min(Math.max(wanted, prior + 40), 300 - (drops.length - index - 1) * 40);
+      const progress = Math.max(0, Math.min(1, (now - d.spawnAt) / (d.expiresAt - d.spawnAt)));
+      const wanted = progress * (fieldHeight - cardHeight);
+      const ceiling = fieldHeight - cardHeight - (drops.length - index - 1) * (cardHeight + gap);
+      const y = Math.min(Math.max(wanted, prior + cardHeight + gap), ceiling);
       positions[d.id] = y;
       prior = y;
     });
@@ -564,9 +593,8 @@ function Board({
           ))}
         </div>
       </div>
-      <div className="rain-field">
+      <div className="rain-field" ref={field}>
         {player.drops.map((d) => {
-          const progress = Math.max(0, Math.min(1, (now - d.spawnAt) / (d.expiresAt - d.spawnAt)));
           const incoming = now < d.spawnAt;
           return (
             <button
@@ -579,8 +607,10 @@ function Board({
                 (incoming ? 'incoming' : '')
               }
               style={{
-                top: `${(positions[d.id] / 340) * 100}%`,
-                left: `${2 + (d.lane % 2) * 50}%`,
+                top: `${positions[d.id]}px`,
+                left: `${2 + (d.lane % columns) * 50}%`,
+                width: columns === 1 ? '96%' : '47%',
+                maxWidth: columns === 1 ? '96%' : '47%',
                 zIndex: d.id === player.targetId ? 2 : 1,
               }}
               onClick={() => onSelect(d.id)}
@@ -591,18 +621,11 @@ function Board({
                   <span>↘</span> {t('attack')}
                 </>
               ) : (
-                <>
-                  {Array.from(d.snippet.target).map((ch, i) => (
-                    <TypedChar
-                      key={i}
-                      expected={ch}
-                      actual={own && d.id === player.targetId ? player.typing.buffer[i] : undefined}
-                    />
-                  ))}
-                  {own && d.id === player.targetId && (
-                    <Overflow buffer={player.typing.buffer} length={d.snippet.target.length} />
-                  )}
-                </>
+                <Code
+                  compact
+                  snippet={d.snippet}
+                  typing={own && d.id === player.targetId ? player.typing : undefined}
+                />
               )}
             </button>
           );
@@ -627,7 +650,8 @@ export function BattleGame({ game, onLeave }: { game: Game; onLeave: () => void 
   const capture = useTypingInput({
     session: b?.id,
     enabled: b?.status === 'playing' && game.connected,
-    multiline: false,
+    multiline: true,
+    battleControls: true,
     send: game.send,
     select: (direction) => {
       const mine = b?.players.find((p) => p.id === game.playerId);
@@ -687,16 +711,11 @@ export function BattleGame({ game, onLeave }: { game: Game; onLeave: () => void 
       </div>
       <div className="battle-input-wrap" onClick={() => input.current?.focus()}>
         <Terminal size={20} />
-        <code>
-          {mine.typing.buffer ? (
-            Array.from(mine.typing.buffer).map((ch, i) => (
-              <TypedChar key={i} expected={target?.snippet.target[i] || ''} actual={ch} />
-            ))
-          ) : (
-            <span className="placeholder">{target?.snippet.target || t('instructions')}</span>
-          )}
-        </code>
-        <span className="input-caret" />
+        {target ? (
+          <Code compact snippet={target.snippet} typing={mine.typing} />
+        ) : (
+          <span className="placeholder">{t('instructions')}</span>
+        )}
         <textarea {...capture.props} aria-label="Battle input" className="capture-input" />
       </div>
       <p className="small-note">{ime ? t('ime') : !focused ? t('focus') : t('selectHint')}</p>

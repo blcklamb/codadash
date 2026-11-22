@@ -2339,3 +2339,54 @@ input {
   background: var(--bg);
   color: var(--text);
 }
+
+/* Battle snippets are short multiline calls. Keep every line visible. */
+.battle-layout {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+.rain-field {
+  height: 600px;
+}
+.drop {
+  width: 47%;
+  max-width: 47%;
+  height: 76px;
+  padding: 7px 5px;
+  text-align: left;
+}
+.compact-code {
+  font: 11px/20px var(--mono);
+}
+.compact-code .code-line {
+  display: block;
+  min-height: 20px;
+  white-space: pre;
+}
+.compact-code .code-line code {
+  font: inherit;
+  white-space: pre;
+  padding-right: 0;
+}
+.battle-input-wrap {
+  align-items: flex-start;
+  min-height: 90px;
+}
+.battle-input-wrap .compact-code {
+  font-size: 14px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+@media (max-width: 1200px) {
+  .battle-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .battle-layout .versus {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .rain-field {
+    height: 600px;
+  }
+}

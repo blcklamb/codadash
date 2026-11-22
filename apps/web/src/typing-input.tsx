@@ -8,12 +8,14 @@ export function useTypingInput({
   session,
   enabled,
   multiline,
+  battleControls = false,
   send,
   select,
 }: {
   session?: string;
   enabled: boolean;
   multiline: boolean;
+  battleControls?: boolean;
   send: (op: Action['op'], char?: string) => void;
   select?: (direction: -1 | 1) => void;
 }) {
@@ -42,10 +44,10 @@ export function useTypingInput({
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (multiline) send('insert', '\n');
-    } else if (e.key === 'Escape' && !multiline) {
+    } else if (e.key === 'Escape' && battleControls) {
       e.preventDefault();
       send('clear');
-    } else if (!multiline && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    } else if (battleControls && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault();
       select?.(e.key === 'ArrowUp' ? -1 : 1);
     } else if (/^[\x20-\x7e]$/.test(e.key)) {

@@ -2,6 +2,7 @@ import {
   deck,
   dayKey,
   VERSION,
+  BATTLE_VERSION,
   type Language,
   type Difficulty,
   type PracticeDifficulty,
@@ -279,15 +280,15 @@ export function createBattle(
     attackIndex: 0,
     winner: null,
     reason: '',
-    version: VERSION,
+    version: BATTLE_VERSION,
     date: dayKey(now),
   };
 }
 export function timings(b: Battle, now: number) {
   const phase = Math.min(2, Math.max(0, Math.floor((now - b.startAt) / 40000)));
   return b.difficulty === 'beginner'
-    ? { interval: [4500, 4000, 3500][phase], fall: [16000, 15000, 14000][phase] }
-    : { interval: [4000, 3500, 3000][phase], fall: [12000, 11000, 10000][phase] };
+    ? { interval: [6750, 6000, 5250][phase], fall: [24000, 22500, 21000][phase] }
+    : { interval: [6000, 5250, 4500][phase], fall: [18000, 16500, 15000][phase] };
 }
 export function chooseTarget(p: Player, now: number) {
   if (p.drops.some((d) => d.id === p.targetId && d.spawnAt <= now)) return;
